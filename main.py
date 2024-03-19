@@ -463,8 +463,8 @@ if __name__ == '__main__':
 
     ### error tracking throughtout script
     # duplicate assets that failed at some point in the script
-    failed_assets_on_merge_and_update_assets = {}
-    failed_assets_on_update_findings = {}
+    failed_assets_on_merge_and_update_assets = []
+    failed_assets_on_update_findings = []
 
     ### get list of clients in instance
     log.info(f'Loading clients from instance...')
@@ -553,7 +553,11 @@ if __name__ == '__main__':
         for duplicate_asset in duplicate_assets:
             if not combine_and_merge_asset_data(main_asset, duplicate_asset):
                 log.exception(f'Could not combine \'{duplicate_asset["asset"]}\' into \'{main_asset_og_name}\'. Skipping \'{duplicate_asset["asset"]}\'... (Any previously logged asset name changes not updated in Plextrac!)')
-                failed_asset_merges_in_group.append(duplicate_asset)
+                failed_asset_merge = {
+                    "duplicate_asset": duplicate_asset,
+                    "main_asset": main_asset
+                }
+                failed_asset_merges_in_group.append(failed_asset_merge)
                 continue
             # keep track of original asset name after potential changes
             if main_asset_og_name != main_asset['asset']:
@@ -564,9 +568,10 @@ if __name__ == '__main__':
         # remove dup assets from group that weren't successfully merged into main asset
         if len(failed_asset_merges_in_group) > 0:
             # add failed asset into error tracking throughtout script
-            for failed_dup_asset in failed_asset_merges_in_group:
+            for failed_asset_merge in failed_asset_merges_in_group:
+                failed_dup_asset = failed_asset_merge['duplicate_asset']
                 unique_asset_group_merge_successes = list(filter(lambda x: x['id'] != failed_dup_asset['id'], unique_asset_group_merge_successes))
-                failed_assets_on_merge_and_update_assets[failed_dup_asset['id']] = failed_dup_asset
+                failed_assets_on_merge_and_update_assets.append(failed_asset_merge)
 
         # update client asset request in PT
         try:
@@ -586,10 +591,14 @@ if __name__ == '__main__':
     # removing all groups whose main asset was not successfully updated
     for i in failed_asset_group_updates[::-1]:
         for failed_dup_asset in asset_relations_dup_groups[i]:
-            failed_assets_on_merge_and_update_assets[failed_dup_asset['id']] = failed_dup_asset
+            failed_asset_update = {
+                "duplicate_asset": failed_dup_asset,
+                "main_asset": None
+            }
+            failed_assets_on_merge_and_update_assets.append(failed_asset_update)
         asset_relations_dup_groups.pop(i)
     if len(failed_assets_on_merge_and_update_assets) > 1:
-        log.exception(f'Failed to merge {len(failed_assets_on_merge_and_update_assets)} asset(s). These asset(s) will be excluded when determining duplicate asset replacements')
+        log.exception(f'Failed to merge or update {len(failed_assets_on_merge_and_update_assets)} asset(s). These asset(s) will be excluded when determining duplicate asset replacements on findings')
     # endregion
 
     
@@ -601,7 +610,7 @@ if __name__ == '__main__':
         main_asset = get_main_asset_from_group(unique_asset_group)
         duplicate_assets = [x for x in unique_asset_group if x['id'] != main_asset['id']]
         for duplicate_asset in duplicate_assets:
-            if duplicate_asset['id'] not in failed_assets_on_merge_and_update_assets.keys():
+            if duplicate_asset['id'] not in [pair['duplicate_asset']['id'] for pair in failed_assets_on_merge_and_update_assets]:
                 asset_replacements.append([main_asset, duplicate_asset])
     
     log.success(f'Found {len(asset_replacements)} asset replacements needed to update all findings associated with duplicate assets.')
@@ -681,7 +690,7 @@ if __name__ == '__main__':
                 log.exception(f'Finding \'{finding_ref["finding_id"]}\' in report \'{finding_ref["report_id"]}\' doesn\'t have proper JSON response. Cannot update this finding. Skipping...')
                 # add affected dup assets to non updated list
                 for update in finding_ref['updates']:
-                    failed_assets_on_update_findings[update['duplicate_asset']['id']] = update['duplicate_asset']
+                    failed_assets_on_update_findings.append(update)
                 log.info(update_metrics.print_iter_metrics())
                 continue
             finding_ref['finding'] = response.json
@@ -690,7 +699,7 @@ if __name__ == '__main__':
             log.exception(f'Could not GET finding: {e}')
             # add affected dup assets to non updated list
             for update in finding_ref['updates']:
-                failed_assets_on_update_findings[update['duplicate_asset']['id']] = update['duplicate_asset']
+                failed_assets_on_update_findings.append(update)
             log.info(update_metrics.print_iter_metrics())
             continue
 
@@ -698,7 +707,7 @@ if __name__ == '__main__':
         log.info(f'Processing finding record and making asset replacements...')
         for update in finding_ref['updates']:
             if not update_finding_asset_reference(finding_ref['finding'], update['duplicate_asset'], update['main_asset']):
-                failed_assets_on_update_findings[update['duplicate_asset']['id']] = update['duplicate_asset']
+                failed_assets_on_update_findings.append(update)
         
         # update finding
         log.info(f'PUTing finding in Plextrac with all updated asset replacements...')
@@ -708,7 +717,7 @@ if __name__ == '__main__':
                 log.exception(f'Finding \'{finding_ref["finding_id"]}\' in report \'{finding_ref["report_id"]}\' PUT request did not return success message. Cannot apply updates to this finding. Skipping...')
                 # add affected dup assets to non updated list
                 for update in finding_ref['updates']:
-                    failed_assets_on_update_findings[update['duplicate_asset']['id']] = update['duplicate_asset']
+                    failed_assets_on_update_findings.append(update)
                 log.info(update_metrics.print_iter_metrics())
                 continue
             log.success(f'Updated finding')
@@ -716,7 +725,7 @@ if __name__ == '__main__':
             log.exception(f'Could not PUT finding with updated asset info: {e}')
             # add affected dup assets to non updated list
             for update in finding_ref['updates']:
-                failed_assets_on_update_findings[update['duplicate_asset']['id']] = update['duplicate_asset']
+                failed_assets_on_update_findings.append(update)
             log.info(update_metrics.print_iter_metrics())
             continue
 
@@ -738,7 +747,7 @@ if __name__ == '__main__':
         duplicate_asset = asset_replacement_pair[1]
         log.info(f'Processing asset \'{duplicate_asset.get("asset", "missing asset name")}\' for deletion...')
 
-        if duplicate_asset['id'] in list(failed_assets_on_update_findings.keys()):
+        if duplicate_asset['id'] in [pair['duplicate_asset']['id'] for pair in failed_assets_on_update_findings]:
             log.info(delete_metrics.print_iter_metrics())
             continue
         
@@ -753,10 +762,10 @@ if __name__ == '__main__':
     # after replacements were determined this list shows failed replacements
     if num_success < len(asset_replacements):
         log.exception(f'List of duplicate assets that could not be fully replaced. See entire script execution log for details')
-        for asset_id, asset_data in failed_assets_on_update_findings.items():
-            log.exception(asset_data['asset'])
+        for pair in failed_assets_on_update_findings:
+            log.exception(f'{pair["duplicate_asset"]["asset"]}  ->  {pair["main_asset"].get("asset", "failed asset update")}')
     # shows assets which failed to create replacements
     if len(failed_assets_on_merge_and_update_assets) > 0:
         log.exception(f'Failed to merge or update assets for {len(failed_assets_on_merge_and_update_assets)} duplicate assets')
-        for asset_id, asset_data in failed_assets_on_merge_and_update_assets.items():
-            log.exception(asset_data['asset'])
+        for pair in failed_assets_on_merge_and_update_assets:
+            log.exception(f'{pair["duplicate_asset"]["asset"]}  ->  {pair["main_asset"].get("asset", "failed asset update")}')
