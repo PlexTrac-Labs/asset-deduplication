@@ -125,7 +125,7 @@ class LogFormatHandler():
         self.logger.critical(ColorPrint.print_red(f'[CRITICAL] {message}'))
 
     def exception(self, message):
-        self.logger.exception(ColorPrint.print_yellow(f'[EXCEPTION] {message}'))
+        self.logger.exception(ColorPrint.print_yellow(f'[EXCEPTION] {message}'), exc_info=False)
 
 
 

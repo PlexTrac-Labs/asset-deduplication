@@ -1,7 +1,5 @@
-# base-API-script
-This repo can be used as a starting point for developing a Python script that utilizes the Plextrac API in some way. It acts as a mini framework with some helpful utilities that make endpoint calls easier. These utilities include a logger, authentication handler, API wrapper library that stores endpoint URLs, and other general utility function that revolve around user inputs, data sanitization, and data validation.
-
-To get started make a copy of this repo and read through the main.py file which goes more in-depth about the utilities available. You can also run the script with the instructions below to see the output of the examples used when describing the utilities available. Once you know what's available, you can remove the examples, and start writing your script in the main.py file.
+# asset-deduplication
+This Python script is designed to facilitate asset deduplication using the Plextrac API. It identifies duplicate assets within a specific Plextrac client and updates associated findings to reference a primary asset for each group of duplicate assets. Below is an overview of the script functionality and usage instructions.
 
 # Requirements
 - [Python 3+](https://www.python.org/downloads/)
@@ -38,7 +36,11 @@ The following values can either be added to the `config.yaml` file or entered wh
 - Password
 
 ## Script Execution Flow
-- Starts executing the main.py file
-- Prints script info stored in settings.py
-- Reads in values from config.yaml file
-- Goes through list of examples to show the user current functionality that can be utilized
+- Retrieve a list of clients from the Plextrac instance.
+- Prompt the user to select a client for asset deduplication.
+- Load assets for the selected client.
+- Identify duplicate assets and group them together.
+- Determine asset pair replacements needed to update associated findings.
+- Update affected assets on finding records.
+- Delete duplicate client assets no longer tied to any findings.
+- Log the completion status and any failed operations.
