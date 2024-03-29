@@ -223,10 +223,10 @@ def get_asset_hostname(asset) -> str | None:
 def is_matching_asset(asset_a, asset_b) -> bool:
     asset_a_ip_list = get_asset_ip_list(asset_a)
     asset_b_ip_list = get_asset_ip_list(asset_b)
-    asset_a_name = get_asset_name(asset_a)
-    asset_b_name = get_asset_name(asset_b)
-    asset_a_hostname = get_asset_hostname(asset_a)
-    asset_b_hostname = get_asset_hostname(asset_b)
+    asset_a_name = str(get_asset_name(asset_a)).lower()
+    asset_b_name = str(get_asset_name(asset_b)).lower()
+    asset_a_hostname = str(get_asset_hostname(asset_a)).lower()
+    asset_b_hostname = str(get_asset_hostname(asset_b)).lower()
 
     if asset_a_name != None:
         if asset_a_name == asset_b_name or asset_a_name == asset_b_hostname:
