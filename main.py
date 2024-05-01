@@ -224,9 +224,9 @@ def is_matching_asset(asset_a, asset_b) -> bool:
     asset_a_ip_list = get_asset_ip_list(asset_a)
     asset_b_ip_list = get_asset_ip_list(asset_b)
     asset_a_name = str(get_asset_name(asset_a)).lower()
-    asset_b_name = str(get_asset_name(asset_b)).lower()
-    asset_a_hostname = str(get_asset_hostname(asset_a)).lower()
-    asset_b_hostname = str(get_asset_hostname(asset_b)).lower()
+    asset_b_name = str(get_asset_name(asset_b)).lower() if get_asset_name(asset_b)!= None else None
+    asset_a_hostname = str(get_asset_hostname(asset_a)).lower() if get_asset_hostname(asset_a) != None else None
+    asset_b_hostname = str(get_asset_hostname(asset_b)).lower() if get_asset_hostname(asset_b) != None else None
 
     if asset_a_name != None:
         if asset_a_name == asset_b_name or asset_a_name == asset_b_hostname:
@@ -255,14 +255,14 @@ def does_asset_match_group(new_asset, group) -> bool:
 
 def get_main_asset_from_group(group: list) -> dict:
     """
-    Pickes an asset from a duplication group to be the main asset that all others get merged into.
+    Picks an asset from a duplication group to be the main asset that all others get merged into.
 
     :param group: list of assets from a duplication group
     :type group: list
     :return: the asset that should be the main asset
     :rtype: dict
     """
-    # In Plextrac you can't have 2 client assets with the same name. So it matters which asset in each group of dulicates becomes the main asset.
+    # In Plextrac you can't have 2 client assets with the same name. So it matters which asset in each group of duplicates becomes the main asset.
     # If you pick an asset with an IP for the name, that asset's name will likely get changed to the name of another asset in it's duplication group.
     # This would cause any client asset update request to fail, since another client asset in Plextrac already has that asset name.
     asset_group_names = [get_asset_name(x) for x in group]
@@ -306,7 +306,7 @@ def combine_and_merge_asset_data(main_asset, dup_asset) -> bool:
     else: # it should not be possible to run in this condition
         main_asset['asset'] = main_asset['id']
 
-    # handling IPs separate from other list fields since the knwonIps list might have gotten an additional value it an asset name was an IP value
+    # handling IPs separate from other list fields since the knownIps list might have gotten an additional value it an asset name was an IP value
     for ip in asset_dup_ip_list:
         if ip not in asset_main_ip_list:
             asset_main_ip_list.append(ip)
@@ -392,7 +392,7 @@ def update_finding_asset_reference(finding, dup_asset, main_asset) -> bool:
 
     # NOTES
     # The finding PUT request only processes some info on the payload. Info about the affected asset properties shown on
-    # the edit affected asset screen ARE proecssed. Info about the client asset, not shown when editing an existing
+    # the edit affected asset screen ARE processed. Info about the client asset, not shown when editing an existing
     # affected asset are not processed, since this data is stored on the client asset doc.
 
     # handle IF finding already contains relations to both the main and dup asset    
@@ -461,7 +461,7 @@ if __name__ == '__main__':
     auth.handle_authentication()
 
 
-    ### error tracking throughtout script
+    ### error tracking throughout script
     # duplicate assets that failed at some point in the script
     failed_assets_on_merge_and_update_assets = []
     failed_assets_on_update_findings = []
@@ -493,7 +493,7 @@ if __name__ == '__main__':
     log.success(f'Loaded {len(client_assets)} asset(s) from client.')
 
 
-    ### filter client_assets into a multileveled list of related assets
+    ### filter client_assets into a multi-leveled list of related assets
     log.info(f'Finding duplicate assets...')
     time.sleep(3)
     asset_relations = []
@@ -506,7 +506,7 @@ if __name__ == '__main__':
                 break # shouldn't need a break since no other matches should be made
         if matched == False:
             asset_relations.append([new_asset])
-    # I'm not sure if it's possible to run into a corner case here. It might be possible where asset_relations can end up containing 2 separete groups that are related.
+    # I'm not sure if it's possible to run into a corner case here. It might be possible where asset_relations can end up containing 2 separate groups that are related.
     # Possibly due to order of assets when processed. If this case is possible, the following section will merge these groups together
     potential_matching_groups = True
     while potential_matching_groups:
@@ -536,7 +536,7 @@ if __name__ == '__main__':
 
     ### update clients assets
     # region
-    # update main client asset per group with the combination of data from all assest in the group
+    # update main client asset per group with the combination of data from all asset in the group
     log.info(f'Combining duplicate assets and updating main client asset in Plextrac...')
     time.sleep(3)
     failed_asset_group_updates = []
@@ -567,7 +567,7 @@ if __name__ == '__main__':
         unique_asset_group_merge_successes = deepcopy(unique_asset_group)
         # remove dup assets from group that weren't successfully merged into main asset
         if len(failed_asset_merges_in_group) > 0:
-            # add failed asset into error tracking throughtout script
+            # add failed asset into error tracking throughout script
             for failed_asset_merge in failed_asset_merges_in_group:
                 failed_dup_asset = failed_asset_merge['duplicate_asset']
                 unique_asset_group_merge_successes = list(filter(lambda x: x['id'] != failed_dup_asset['id'], unique_asset_group_merge_successes))
@@ -618,7 +618,7 @@ if __name__ == '__main__':
 
     ### update affected assets on finding records
     
-    # to make the script more efficient, we first find all changes that need to be made accross all findings. this potentially includes multiple
+    # to make the script more efficient, we first find all changes that need to be made across all findings. this potentially includes multiple
     # replacements for a single finding.
     # this allows each finding to be updated once to decrease total amount of API calls and consequent script execution time
     finding_refs = []
@@ -738,7 +738,7 @@ if __name__ == '__main__':
 
     ##  SECTION 3 - delete dup client asset that are no longer tied to any findings
     # region
-    log.info(f'Removing duplicate client assets that were sucessfully replaced...')
+    log.info(f'Removing duplicate client assets that were successfully replaced...')
     time.sleep(3)
 
     # loop on assets that need to be deleted
