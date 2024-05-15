@@ -10,7 +10,7 @@ save_logs_to_file = True
 # if the Plextrac instance is running on https without valid certs, requests will respond with cert error
 # change this to false to override verification of certs
 verify_ssl = True
-# number of times to rety a request before throwing an error. will only throw the last error encountered if
+# number of times to retry a request before throwing an error. will only throw the last error encountered if
 # number of retries is exceeded. set to 0 to disable retrying requests
 retries = 0
 
@@ -25,3 +25,10 @@ script_info = ["================================================================
                "=                                                                  =",
                "===================================================================="
             ]
+
+# there is a case to be made that as long as the hostname is the same EXCLUDING the domain, then it is the same asset
+#
+# This makes sense in the case where an asset could be part of 2 networks and could be referenced from either network.
+# The 1 asset could have a different domain depending on which network you searched for it on. This toggle determines
+# if the script should consider an asset the same, if the hostname EXCLUDING the domain match.
+match_hostname_from_different_domains = False

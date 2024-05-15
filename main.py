@@ -219,14 +219,26 @@ def get_asset_hostname(asset) -> str | None:
         return hostname
     else:
         return None
+    
+def get_asset_name_without_domain(asset_name:str|None) -> str|None:
+    if asset_name == None:
+        return None
+    name_parts = asset_name.split(".")
+    return name_parts[0]
 
 def is_matching_asset(asset_a, asset_b) -> bool:
     asset_a_ip_list = get_asset_ip_list(asset_a)
     asset_b_ip_list = get_asset_ip_list(asset_b)
-    asset_a_name = str(get_asset_name(asset_a)).lower()
-    asset_b_name = str(get_asset_name(asset_b)).lower() if get_asset_name(asset_b)!= None else None
-    asset_a_hostname = str(get_asset_hostname(asset_a)).lower() if get_asset_hostname(asset_a) != None else None
-    asset_b_hostname = str(get_asset_hostname(asset_b)).lower() if get_asset_hostname(asset_b) != None else None
+    asset_a_name = get_asset_name(asset_a).lower() if get_asset_name(asset_a)!= None else None
+    asset_b_name = get_asset_name(asset_b).lower() if get_asset_name(asset_b)!= None else None
+    asset_a_hostname = get_asset_hostname(asset_a).lower() if get_asset_hostname(asset_a) != None else None
+    asset_b_hostname = get_asset_hostname(asset_b).lower() if get_asset_hostname(asset_b) != None else None
+
+    if settings.match_hostname_from_different_domains:
+        asset_a_name = get_asset_name_without_domain(asset_a_name)
+        asset_b_name = get_asset_name_without_domain(asset_b_name)
+        asset_a_hostname = get_asset_name_without_domain(asset_a_hostname)
+        asset_b_hostname = get_asset_name_without_domain(asset_b_hostname)
 
     if asset_a_name != None:
         if asset_a_name == asset_b_name or asset_a_name == asset_b_hostname:
@@ -283,10 +295,16 @@ def combine_and_merge_asset_data(main_asset, dup_asset) -> bool:
     asset_main_hostname = get_asset_hostname(main_asset)
     asset_dup_hostname = get_asset_hostname(dup_asset)
 
+    # there is a case to be made that as long as the hostname is the same EXCLUDING the domain, then it is the same asset
+    #
+    # This makes sense in the case where an asset could be part of 2 networks and could be referenced from either network.
+    # The 1 asset could have a different domain depending on which network you searched for it on. There is a toggle in the
+    # settings.py file that determines if the script should consider an asset the same if the hostname EXCLUDING the domain match.
+    if not settings.match_hostname_from_different_domains:
     # determine if asset can be automatically merged - see example in project summary doc for manual deduplication need
-    if asset_main_name != None and asset_dup_name != None and asset_main_name.lower() != asset_dup_name.lower():
-        log.exception(f'Both assets have a non IP name that don\'t match, manual deduplication required: Asset 1: \'{asset_main_name}\' | Asset 2: \'{asset_dup_name}\'')
-        return False
+        if asset_main_name != None and asset_dup_name != None and asset_main_name.lower() != asset_dup_name.lower():
+            log.exception(f'Both assets have a non IP name that don\'t match, manual deduplication required: Asset 1: \'{asset_main_name}\' | Asset 2: \'{asset_dup_name}\'')
+            return False
 
     # determine new asset name when merging (asset name, hostname)
     if asset_main_name != None:
