@@ -1,7 +1,7 @@
 import os
 import json
 import csv
-from typing import List
+from typing import List, Union
 
 prompt_prefix = "\n[Prompt] "
 prompt_suffix = ": "
@@ -153,7 +153,7 @@ def load_json_data(msg: str, json_file_path: str = "") -> LoadedJSONData:
 
 
 class LoadedCSVData():
-    def __init__(self, file_path: str, csv: List[List[str]], headers: List[str], data: List[str] | List[List[str]]):
+    def __init__(self, file_path: str, csv: List[List[str]], headers: List[str], data: Union[List[str], List[List[str]]]):
         self.file_path = file_path
         self.csv = csv
         self.headers = headers
