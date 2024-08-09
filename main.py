@@ -1,6 +1,7 @@
 import yaml
 from copy import deepcopy
 import time
+from typing import Union
 
 import settings
 import utils.log_handler as logger
@@ -84,7 +85,7 @@ def get_client_choice(clients) -> int:
         index += 1
     return input.user_list("Select a client to export assets from", "Invalid choice", len(clients)) - 1
 
-def get_client_assets(client) -> list | None:
+def get_client_assets(client) -> Union[list, None]:
     """
     Gets a list of client assets related to the passed in client.
 
@@ -200,7 +201,7 @@ def get_asset_ip_list(asset) -> list:
         asset_ip_list += asset_known_ips
     return asset_ip_list
     
-def get_asset_name(asset) -> str | None:
+def get_asset_name(asset) -> Union[str, None]:
     name = ""
     asset_name = asset.get("asset")
 
@@ -210,7 +211,7 @@ def get_asset_name(asset) -> str | None:
     else:
         return None
 
-def get_asset_hostname(asset) -> str | None:
+def get_asset_hostname(asset) -> Union[str, None]:
     hostname = ""
     asset_hostname = asset.get("hostname", "")
 
@@ -220,7 +221,7 @@ def get_asset_hostname(asset) -> str | None:
     else:
         return None
     
-def get_asset_name_without_domain(asset_name:str|None) -> str|None:
+def get_asset_name_without_domain(asset_name: Union[str, None]) -> Union[str, None]:
     if asset_name == None:
         return None
     name_parts = asset_name.split(".")
@@ -352,7 +353,7 @@ def combine_and_merge_asset_data(main_asset, dup_asset) -> bool:
     return True
 
 
-def get_finding_ref(client_id, report_id, finding_id, finding_refs:list) -> dict | None:
+def get_finding_ref(client_id, report_id, finding_id, finding_refs:list) -> Union[dict, None]:
     matching_refs = list(filter(lambda x: x['client_id']==client_id and x['report_id']==report_id and x['finding_id']==finding_id, finding_refs))
     if len(matching_refs) == 1:
         return matching_refs[0]
